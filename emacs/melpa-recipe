@@ -1,0 +1,4 @@
+(yaml-lsp
+ :fetcher github
+ :repo "psycofdj/yaml-lsp"
+ :files ("emacs/yaml-lsp.el"))

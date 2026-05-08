@@ -1,0 +1,12 @@
+# Compiled binary
+/yaml-lsp
+
+# Go test/coverage artifacts
+*.test
+*.out
+coverage.txt
+
+# Byte-compiled Elisp
+*.elc
+
+/_bmad*

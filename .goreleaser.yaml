@@ -1,0 +1,91 @@
+# Goreleaser v2 config. See https://goreleaser.com.
+#
+# Archive layout is load-bearing: the Emacs client's `:download-server-fn`
+# uses lsp-mode's `lsp-download-install` with `:decompress :targz` (Linux,
+# macOS) or `:decompress :zip` (Windows). Both decompress into the parent
+# of `:store-path`, which is `<lsp-server-install-dir>/yaml-lsp/`. For the
+# binary to land at the expected store path after extraction, archives
+# must contain `yaml-lsp` (or `yaml-lsp.exe` on Windows) at the archive
+# root — i.e. no wrapping directory.
+#
+# Archive names follow `yaml-lsp_<version>_<os>_<arch>.<ext>` and are
+# matched verbatim by the URL built in emacs/yaml-lsp.el. Keep the two
+# in sync.
+version: 2
+
+project_name: yaml-lsp
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: yaml-lsp
+    main: ./cmd/yaml-lsp
+    binary: yaml-lsp
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      # -s -w strips DWARF and symbol tables (smaller binaries).
+      # -X injects the tag (without leading `v`) into the buildinfo
+      # package; `yaml-lsp version` and the LSP `initialize` response
+      # both read it. Snapshot builds get `0.0.1-next` (or similar) via
+      # goreleaser's `snapshot.version_template`.
+      - -s -w -X github.com/psycofdj/yaml-lsp/internal/buildinfo.Version={{.Version}}
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - id: yaml-lsp
+    ids: [yaml-lsp]
+    # Templated to exactly match the URL built by `yaml-lsp--release-url'
+    # in emacs/yaml-lsp.el. `.Os' lowercases to linux/darwin/windows and
+    # `.Arch' to amd64/arm64 — the same identifiers the Emacs client
+    # derives from `system-type' and `system-configuration'.
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    # `wrap_in_directory: false' (default in v2) means the binary sits at
+    # archive root, which is what lsp-download-install expects.
+    wrap_in_directory: false
+    files:
+      - LICENSE
+      - README.md
+
+checksum:
+  name_template: "checksums.txt"
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  use: github
+  sort: asc
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\([[:word:]]+\))?!?:.+$'
+      order: 0
+    - title: Bug fixes
+      regexp: '^.*?fix(\([[:word:]]+\))?!?:.+$'
+      order: 1
+    - title: Others
+      order: 999
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+      - '^ci:'
+
+release:
+  draft: false
+  prerelease: auto

@@ -1,0 +1,32 @@
+name: Emacs
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'emacs/**'
+      - '.github/workflows/emacs.yml'
+
+jobs:
+  emacs:
+    name: Compile / test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: purcell/setup-emacs@master
+        with:
+          version: '29.4'
+      - name: Install lsp-mode and dependencies
+        run: |
+          emacs -Q --batch \
+            --eval "(require 'package)" \
+            --eval "(add-to-list 'package-archives '(\"melpa\" . \"https://melpa.org/packages/\"))" \
+            --eval "(package-initialize)" \
+            --eval "(package-refresh-contents)" \
+            --eval "(package-install 'lsp-mode)"
+      - name: Compile
+        working-directory: emacs
+        run: make compile
+      - name: Test
+        working-directory: emacs
+        run: make test

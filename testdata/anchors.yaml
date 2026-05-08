@@ -1,0 +1,6 @@
+defaults: &defaults
+  image: nginx
+  replicas: 3
+service:
+  <<: *defaults
+  replicas: 5

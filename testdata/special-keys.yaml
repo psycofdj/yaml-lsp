@@ -1,0 +1,4 @@
+"weird.key/v1":
+  inner: value
+  with~tilde:
+    deep: x

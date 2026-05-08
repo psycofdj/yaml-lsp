@@ -1,0 +1,8 @@
+containers:
+  - name: web
+    image: nginx
+  - name: sidecar
+    image: envoy
+items:
+  - alpha
+  - beta

@@ -1,0 +1,43 @@
+name: Go
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '**.go'
+      - 'go.mod'
+      - 'go.sum'
+      - '.golangci.yaml'
+      - '.github/workflows/go.yml'
+
+jobs:
+  build:
+    name: Build / test / lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          # Single source of truth: the `go` directive in go.mod.
+          # `check-latest: true` upgrades within that minor on each run
+          # so CI catches stdlib regressions without manual bumps.
+          go-version-file: go.mod
+          check-latest: true
+      - name: Build
+        run: go build ./...
+      - name: Vet
+        run: go vet ./...
+      - name: Test
+        run: go test ./... -race -count=1
+      - name: CLI smoke
+        run: |
+          go build -o yaml-lsp ./cmd/yaml-lsp
+          out=$(./yaml-lsp address --line 4 --column 9 --format jsonpath testdata/single.yaml)
+          if [ "$out" != "\$.metadata.name" ]; then
+            echo "CLI smoke failed: got '$out', want '\$.metadata.name'"
+            exit 1
+          fi
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v2.11.4
